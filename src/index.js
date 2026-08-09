@@ -33,6 +33,45 @@ async function fetchPage(url, cachePath) {
     return { links, nextUrl };
 }
 
+async function fetchBookDetail(url, cachePath, sourcePage) {
+    let html;
+         if (fs.existsSync(cachePath)) { 
+       html = fs.readFileSync(cachePath, 'utf-8');
+       console.log('CACHE HIT ', html.length);
+    } else {
+        const response = await fetch(url, {
+            headers: { 'User-Agent': 'FlyRankInternshipA9/1.0 (+https://github.com/ZeyadYasser114/Flyrank-Polite-Scraper)' },
+            signal: AbortSignal.timeout(5000)
+        });
+        console.log('Status:', response.status);
+        html = await response.text();
+        fs.writeFileSync(cachePath, html);
+        console.log('FETCH, size:', html.length);
+    }
+    const $ = cheerio.load(html);
+    
+    const title = $('h1').text();
+    const price_text = $('p.price_color').text();
+    const availability_text = $('p.instock.availability').text().trim();
+
+    const ratingClasses = $('p.star-rating').attr('class');
+    const rating_text = ratingClasses.split(' ')[1];
+    
+    const description = $('#product_description + p').text() || null;
+
+    return {
+        title,
+        product_url: url,
+        price_text,
+        availability_text,
+        rating_text,
+        description,
+        source_page: sourcePage,
+        fetched_at: new Date().toISOString()
+    };
+
+}
+
 async function run() {
     const allLinks = [];
     let currentUrl = PAGE_URL;
@@ -57,4 +96,12 @@ async function run() {
     console.log('unique_urls=' + uniqueLinks.length);
 }
 
-run();
+async function testOneBook(){
+    const record = await fetchBookDetail(
+         'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html',
+        'cache/book-test.html',
+        'https://books.toscrape.com/catalogue/page-1.html'
+    );
+    console.log(record);
+}
+testOneBook();
