@@ -1,0 +1,20 @@
+{
+  "name": "flyrank-scraper",
+  "version": "1.0.0",
+  "description": "**Site:** [Books to Scrape](https://books.toscrape.com)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZeyadYasser114/Flyrank-Polite-Scraper.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ZeyadYasser114/Flyrank-Polite-Scraper/issues"
+  },
+  "homepage": "https://github.com/ZeyadYasser114/Flyrank-Polite-Scraper#readme"
+}
