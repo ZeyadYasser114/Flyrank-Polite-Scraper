@@ -94,14 +94,15 @@ async function run() {
     console.log('catalogue_pages=' + (pageNum - 1));
     console.log('discovered=' + allLinks.length);
     console.log('unique_urls=' + uniqueLinks.length);
+    const records = [];
+    for (let i = 0; i < uniqueLinks.length; i++){
+        const bookUrl = uniqueLinks[i];
+        const cachePath = `cache/book-${i + 1}.html`;
+        const record = await fetchBookDetail(bookUrl, cachePath, PAGE_URL);
+        records.push(record)
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    console.log('detail_pages=' + records.length)
 }
 
-async function testOneBook(){
-    const record = await fetchBookDetail(
-         'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html',
-        'cache/book-test.html',
-        'https://books.toscrape.com/catalogue/page-1.html'
-    );
-    console.log(record);
-}
-testOneBook();
+run();
