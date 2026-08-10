@@ -1,6 +1,7 @@
 const fs = require('fs');
 const cheerio = require('cheerio');
 const { z } = require('zod');
+const { runInContext } = require('vm');
 const BookSchema = z.object({
 
     title: z.string(),
@@ -87,6 +88,7 @@ async function fetchBookDetail(url, cachePath, sourcePage) {
 }
 
 async function run() {
+    const startTime = Date.now();
     const allLinks = [];
     let currentUrl = PAGE_URL;
     let pageNum = 1;
@@ -109,11 +111,17 @@ async function run() {
     console.log('discovered=' + allLinks.length);
     console.log('unique_urls=' + uniqueLinks.length);
     const records = [];
+    const failedPages = [];
     for (let i = 0; i < uniqueLinks.length; i++){
         const bookUrl = uniqueLinks[i];
         const cachePath = `cache/book-${i + 1}.html`;
-        const record = await fetchBookDetail(bookUrl, cachePath, PAGE_URL);
-        records.push(record)
+        try {
+            const record = await fetchBookDetail(bookUrl, cachePath, PAGE_URL);
+            records.push(record)
+        } catch (error) {
+            console.log('FAILED:', bookUrl, error.message);
+            failedPages.push({ url: bookUrl, reason: error.message });
+        }
         await new Promise(resolve => setTimeout(resolve, 500));
     }
     console.log('detail_pages=' + records.length)
@@ -138,5 +146,21 @@ fs.writeFileSync('output/errors.json', JSON.stringify(invalidRecords, null, 2));
 
 console.log('valid=' + validRecords.length);
 console.log('invalid=' + invalidRecords.length);
+const durationMs = Date.now() - startTime;
+
+    const report = {
+        start_time: new Date(startTime).toISOString(),
+        duration_ms: durationMs,
+        pages_fetched: pageNum - 1,
+        detail_pages_fetched: records.length,
+        valid_records: validRecords.length,
+        invalid_records: invalidRecords.length,
+        failed_pages: failedPages.length
+    };
+
+    fs.writeFileSync('output/run-report.json', JSON.stringify(report, null, 2));
+    console.log('Report written. failed_pages=' + failedPages.length);
 }
+
+
 run();
