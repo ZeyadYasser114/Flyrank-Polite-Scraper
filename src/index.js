@@ -1,5 +1,18 @@
 const fs = require('fs');
 const cheerio = require('cheerio');
+const { z } = require('zod');
+const BookSchema = z.object({
+
+    title: z.string(),
+    product_url: z.string().url(),
+    price_text: z.string(),
+    price_gbp: z.number(),
+    availability_text: z.string(),
+    rating_text: z.string(),
+    description: z.string().nullable(),
+    source_page: z.string().url(),
+    fetched_at: z.string()
+});
 fs.mkdirSync('cache', {recursive: true});
 const PAGE_URL = 'https://books.toscrape.com/catalogue/page-1.html';
 
@@ -58,11 +71,12 @@ async function fetchBookDetail(url, cachePath, sourcePage) {
     const rating_text = ratingClasses.split(' ')[1];
     
     const description = $('#product_description + p').text() || null;
-
+    const price_gbp = parseFloat(price_text.replace(/[^0-9.]/g, ''));
     return {
         title,
         product_url: url,
         price_text,
+        price_gbp,
         availability_text,
         rating_text,
         description,
@@ -103,6 +117,26 @@ async function run() {
         await new Promise(resolve => setTimeout(resolve, 500));
     }
     console.log('detail_pages=' + records.length)
+
+    const validRecords = [];
+    const invalidRecords = [];
+ for (let i = 0; i < records.length; i++) {
+    const result = BookSchema.safeParse(records[i]);
+    if (result.success){
+        validRecords.push(result.data);
+    }
+    else{
+        invalidRecords.push({record: records[i], reason: result.error.message});
+    }
+
 }
 
+fs.mkdirSync('output', { recursive: true });
+
+fs.writeFileSync('output/books.json', JSON.stringify(validRecords, null, 2));
+fs.writeFileSync('output/errors.json', JSON.stringify(invalidRecords, null, 2));
+
+console.log('valid=' + validRecords.length);
+console.log('invalid=' + invalidRecords.length);
+}
 run();
